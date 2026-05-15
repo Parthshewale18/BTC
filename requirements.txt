@@ -1,0 +1,14 @@
+requests
+pandas
+numpy
+ta # RSI, MACD, EMA, Bollinger Bands
+xgboost
+lightgbm
+scikit-learn
+tensorflow
+joblib
+fastapi
+uvicorn
+matplotlib
+seaborn
+plotly

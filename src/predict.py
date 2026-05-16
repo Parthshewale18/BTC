@@ -211,7 +211,7 @@ def build_features(df):
     # ── Bollinger Bands ───────────────────────────────────────────────────────
     bb = BollingerBands(close=fe['close'], window=20, window_dev=2)
     fe['bb_upper']       = bb.bollinger_hband()
-    fe['bb_middle']      = bb.bollinger_mavg()
+    fe['bb_mid']      = bb.bollinger_mavg()
     fe['bb_lower']       = bb.bollinger_lband()
     fe['bb_width']       = bb.bollinger_wband()
     fe['bb_pct']         = bb.bollinger_pband()
@@ -439,37 +439,27 @@ def log_prediction(result, log_file=LOG_FILE):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def print_prediction(result):
-    """Prints a clean, readable prediction card to the terminal."""
-
-    arrow    = '▲' if result['direction'] == 'UP' else '▼'
-    trust    = '✅' if result['trustworthy'] else '⚠️ '
-
-    # Confidence bar: 20 chars wide
-    filled   = int(result['confidence'] * 20)
-    bar      = '█' * filled + '░' * (20 - filled)
-
-    # Colour the direction
-    dir_str  = f"{arrow} {result['direction']} ({result['signal_strength']})"
+    arrow  = 'UP ^' if result['direction'] == 'UP' else 'DOWN v'
+    trust  = '[OK]' if result['trustworthy'] else '[LOW]'
+    filled = int(result['confidence'] * 20)
+    bar    = '#' * filled + '-' * (20 - filled)
 
     print()
-    print('┌─────────────────────────────────────────────────┐')
-    print('│        BTC/USDT  —  Real-Time Prediction        │')
-    print('├─────────────────────────────────────────────────┤')
-    print(f'│  Time       : {result["timestamp"][:19]} UTC        │')
-    print(f'│  Current    : ${result["current_price"]:>12,.2f}                   │')
-    print(f'│  Predicted  : ${result["predicted_price"]:>12,.2f}  '
-          f'({result["pct_change_est"]:+.3f}%)      │')
-    print(f'│  Direction  : {dir_str:<36}│')
-    print(f'│  Confidence : [{bar}] {result["confidence"]:.1%}  │')
-    print(f'│  Trustworthy: {trust}  (min threshold: '
-          f'{result["threshold_used"]:.0%})              │')
-    print('└─────────────────────────────────────────────────┘')
+    print('=' * 52)
+    print('   BTC/USDT  --  Real-Time Prediction')
+    print('=' * 52)
+    print(f"  Time       : {result['timestamp'][:19]} UTC")
+    print(f"  Current    : ${result['current_price']:>12,.2f}")
+    print(f"  Predicted  : ${result['predicted_price']:>12,.2f}  ({result['pct_change_est']:+.3f}%)")
+    print(f"  Direction  : {arrow}  ({result['signal_strength']})")
+    print(f"  Confidence : [{bar}] {result['confidence']:.1%}")
+    print(f"  Trustworthy: {trust}  (threshold: {result['threshold_used']:.0%})")
+    print('=' * 52)
 
     if not result['trustworthy']:
-        print('  ⚠️  Low confidence — model is uncertain, do not act on this signal')
+        print('  WARNING: Low confidence -- treat with caution')
     print()
-
-
+    
 # ─────────────────────────────────────────────────────────────────────────────
 # ORCHESTRATOR — ties all steps together
 # ─────────────────────────────────────────────────────────────────────────────
@@ -482,11 +472,11 @@ def run_prediction():
     Returns the result dict so FastAPI (app.py) can also call this.
     """
     # 1. Fetch live candles from Binance
-    log.info('── Fetching live candles ──────────────────────')
+    log.info('--- Fetching live candles ---')
     raw_df = fetch_latest_candles()
 
     # 2. Compute all technical indicators
-    log.info('── Computing features ─────────────────────────')
+    log.info('--- Computing features ---')
     feature_df = build_features(raw_df)
 
     # Drop warm-up NaN rows (indicators need history to initialise)
@@ -500,11 +490,11 @@ def run_prediction():
         )
 
     # 3. Load saved models
-    log.info('── Loading models ─────────────────────────────')
+    log.info('--- Loading models ---')
     models = load_models()
 
     # 4. Predict
-    log.info('── Running prediction ─────────────────────────')
+    log.info('--- Running prediction ---')
     result = predict(models, feature_df)
 
     # 5. Save to log file

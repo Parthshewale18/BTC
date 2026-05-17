@@ -10,7 +10,7 @@ INTERVAL      = "5m"
 LIMIT         = 1000          # max per Binance request
 TOTAL_CANDLES = 50_000        # 50,000 x 5 min ≈ 173 days
 
-BASE_URL = 'https://api.binance.us/api/v3/klines'
+BASE_URL = 'https://api1.binance.com/api/v3/klines'
 OUTPUT_DIR  = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "btc_5m.csv")
 

@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BTC Prediction Terminal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.3.0/tabler-icons.min.css" />
+<style>
+  :root {
+    --btc: #F7931A;
+    --btc-dim: #c47514;
+    --green: #16a34a;
+    --red: #dc2626;
+    --green-bg: #f0fdf4;
+    --red-bg: #fef2f2;
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1f1f1f;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f1f1f1;
+    --text2: #888;
+    --text3: #555;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 820px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 2rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .btc-logo {
+    width: 40px; height: 40px;
+    background: var(--btc);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .header-text h1 { font-size: 16px; font-weight: 500; letter-spacing: 0.03em; }
+  .header-text p { font-size: 11px; color: var(--text2); letter-spacing: 0.06em; margin-top: 2px; }
+  .live-badge {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--green);
+    display: none;
+  }
+  .live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    animation: blink 2s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:0.2} }
+
+  /* API bar */
+  .api-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+  .api-bar input {
+    flex: 1;
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .api-bar input:focus { border-color: var(--btc); }
+  .api-bar input::placeholder { color: var(--text3); }
+  .btn-primary {
+    background: var(--btc);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 10px 20px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--text2);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex; align-items: center; gap: 6px;
+    white-space: nowrap;
+  }
+  .btn-secondary:hover { background: var(--surface2); }
+  .btn-loop {
+    background: transparent;
+    color: var(--text3);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn-loop.active { color: var(--green); border-color: var(--green); }
+
+  /* Status bar */
+  .status { font-size: 11px; color: var(--text3); margin-bottom: 1.5rem; height: 16px; }
+  .status.error { color: var(--red); }
+  .status.loading { color: var(--btc); }
+  .status.success { color: var(--green); }
+
+  /* Error box */
+  .error-box {
+    background: rgba(220,38,38,0.1);
+    border: 0.5px solid rgba(220,38,38,0.4);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: 12px;
+    color: #f87171;
+    margin-bottom: 1rem;
+    white-space: pre-line;
+    display: none;
+  }
+
+  /* Metrics grid */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  .metric-label {
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .metric-value {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+  }
+  .metric-value.up { color: var(--green); }
+  .metric-value.down { color: var(--red); }
+  .metric-value.btc { color: var(--btc); }
+  .metric-sub { font-size: 11px; color: var(--text3); margin-top: 5px; }
+
+  /* Direction card */
+  .direction-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .dir-icon {
+    width: 56px; height: 56px;
+    border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; flex-shrink: 0;
+  }
+  .dir-icon.up { background: rgba(22,163,74,0.12); color: var(--green); }
+  .dir-icon.down { background: rgba(220,38,38,0.12); color: var(--red); }
+  .dir-icon.neutral { background: var(--surface2); color: var(--text3); }
+  .dir-main { flex: 1; }
+  .dir-label { font-size: 24px; font-weight: 500; }
+  .dir-label.up { color: var(--green); }
+  .dir-label.down { color: var(--red); }
+  .dir-label.neutral { color: var(--text3); }
+  .dir-sub { font-size: 12px; color: var(--text2); margin-top: 3px; }
+  .signal-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .signal-STRONG { background: rgba(22,163,74,0.15); color: #4ade80; }
+  .signal-MODERATE { background: rgba(234,179,8,0.15); color: #facc15; }
+  .signal-WEAK { background: var(--surface2); color: var(--text2); }
+
+  /* Confidence bar */
+  .conf-section { margin-bottom: 1.5rem; }
+  .conf-header {
+    display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--text2);
+    margin-bottom: 8px;
+  }
+  .conf-track {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .conf-fill {
+    height: 100%; border-radius: 3px;
+    transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
+    background: var(--btc);
+  }
+  .trust-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--text2);
+    margin-top: 8px;
+  }
+  .trust-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Divider */
+  .divider { height: 0.5px; background: var(--border); margin: 1.5rem 0; }
+
+  /* Section title */
+  .section-title {
+    font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text3);
+    margin-bottom: 12px;
+  }
+
+  /* History table */
+  .history-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    text-align: left; padding: 6px 10px;
+    color: var(--text3); font-weight: 400;
+    font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase;
+    border-bottom: 0.5px solid var(--border);
+  }
+  tbody td { padding: 9px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--surface2); }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; }
+  .pill.up { background: rgba(22,163,74,0.15); color: #4ade80; }
+  .pill.down { background: rgba(220,38,38,0.15); color: #f87171; }
+
+  /* Empty state */
+  .empty {
+    text-align: center; padding: 2rem;
+    color: var(--text3); font-size: 13px;
+  }
+  .empty i { font-size: 28px; display: block; margin-bottom: 8px; }
+
+  /* Hint */
+  .hint { font-size: 11px; color: var(--text3); margin-top: 1.5rem; line-height: 1.8; }
+  .hint code {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    padding: 1px 6px; border-radius: 4px;
+    font-family: inherit;
+  }
+  .hint a { color: var(--btc); text-decoration: none; }
+
+  /* Prediction section hidden initially */
+  #predArea { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="btc-logo">₿</div>
+    <div class="header-text">
+      <h1>BTC/USDT Prediction Terminal</h1>
+      <p>5-MINUTE CANDLES &nbsp;·&nbsp; XGBOOST ML &nbsp;·&nbsp; REAL-TIME</p>
+    </div>
+    <div class="live-badge" id="liveBadge">
+      <div class="live-dot"></div> LIVE
+    </div>
+  </div>
+
+  <div class="api-bar">
+    <input type="text" id="apiUrl" placeholder="https://your-app.onrender.com" spellcheck="false" />
+    <button class="btn-primary" id="btnPredict" onclick="runPredict()">
+      <i class="ti ti-bolt"></i> Predict
+    </button>
+    <button class="btn-secondary" onclick="loadHistory()">
+      <i class="ti ti-history"></i> History
+    </button>
+    <button class="btn-loop" id="btnLoop" onclick="toggleLoop()" title="Auto-predict every 5 minutes">
+      <i class="ti ti-refresh"></i>
+    </button>
+  </div>
+
+  <div class="status" id="statusBar">Enter your Render URL and click Predict</div>
+  <div class="error-box" id="errBox"></div>
+
+  <div id="predArea">
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label">Current price</div>
+        <div class="metric-value" id="mCurr">—</div>
+        <div class="metric-sub" id="mTime">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Predicted price</div>
+        <div class="metric-value" id="mPred">—</div>
+        <div class="metric-sub" id="mChg">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Confidence</div>
+        <div class="metric-value btc" id="mConf">—</div>
+        <div class="metric-sub" id="mThresh">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Signal strength</div>
+        <div class="metric-value" id="mSig" style="font-size:15px;padding-top:5px">—</div>
+        <div class="metric-sub" id="mTrustSub">—</div>
+      </div>
+    </div>
+
+    <div class="direction-card">
+      <div class="dir-icon neutral" id="dirIcon">
+        <i class="ti ti-minus"></i>
+      </div>
+      <div class="dir-main">
+        <div class="dir-label neutral" id="dirLabel">Awaiting prediction</div>
+        <div class="dir-sub" id="dirSub">No data yet</div>
+      </div>
+      <span class="signal-badge signal-WEAK" id="sigBadge">—</span>
+    </div>
+
+    <div class="conf-section">
+      <div class="conf-header">
+        <span>Model confidence</span>
+        <span id="confPct">0%</span>
+      </div>
+      <div class="conf-track">
+        <div class="conf-fill" id="confFill" style="width:0%"></div>
+      </div>
+      <div class="trust-row">
+        <div class="trust-dot" id="trustDot" style="background:var(--text3)"></div>
+        <span id="trustLabel">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="section-title">Recent predictions</div>
+  <div class="history-wrap">
+    <div id="histArea">
+      <div class="empty">
+        <i class="ti ti-clock-hour-3"></i>
+        History loads here
+      </div>
+    </div>
+  </div>
+
+  <div class="hint">
+    <strong style="color:var(--text2)">Setup:</strong><br>
+    1. Paste your Render URL: <code>https://bitcoin-ml-api.onrender.com</code><br>
+    2. Click <strong style="color:var(--text2)">Predict</strong> for a single prediction<br>
+    3. Click <strong style="color:var(--text2)">History</strong> to load past predictions from the server<br>
+    4. Click <strong style="color:var(--text2)">↻</strong> to auto-predict every 5 minutes<br><br>
+    <strong style="color:var(--text2)">Binance 451 error?</strong>
+    Change <code>BASE_URL</code> in <code>predict.py</code> to
+    <code>https://api1.binance.com/api/v3/klines</code> and redeploy.
+  </div>
+</div>
+
+<script>
+  let loopTimer = null;
+  let localHistory = [];
+
+  function getBase() { return document.getElementById('apiUrl').value.trim().replace(/\/$/,''); }
+  function setStatus(msg, cls) {
+    const el = document.getElementById('statusBar');
+    el.textContent = msg;
+    el.className = 'status' + (cls ? ' ' + cls : '');
+  }
+  function showErr(msg) {
+    const el = document.getElementById('errBox');
+    el.textContent = msg; el.style.display = 'block';
+  }
+  function hideErr() { document.getElementById('errBox').style.display = 'none'; }
+  function fmtPrice(n) {
+    return '$' + Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function fmtTime(iso) {
+    try { return new Date(iso).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}) + ' UTC'; }
+    catch { return iso.slice(11,19) + ' UTC'; }
+  }
+
+  async function runPredict() {
+    const base = getBase();
+    if (!base) { setStatus('Enter your Render URL first', 'error'); return; }
+    hideErr();
+    const btn = document.getElementById('btnPredict');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader-2 ti-spin"></i> Fetching...';
+    setStatus('Connecting to ' + base + ' ...', 'loading');
+
+    try {
+      const res = await fetch(base + '/predict');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({detail: res.statusText}));
+        throw new Error(err.detail || res.statusText);
+      }
+      const data = await res.json();
+      renderPrediction(data);
+      addHistory(data);
+      setStatus('Updated ' + new Date().toLocaleTimeString(), 'success');
+      document.getElementById('liveBadge').style.display = 'flex';
+    } catch(e) {
+      setStatus('Request failed — see error below', 'error');
+      showErr('Failed: ' + e.message +
+        '\n\nTips:\n• Check your Render URL is correct\n• Service may be sleeping (wait 30s on free tier)\n• 451 error = Binance geo-block, change BASE_URL in predict.py');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-bolt"></i> Predict';
+    }
+  }
+
+  function renderPrediction(d) {
+    document.getElementById('predArea').style.display = 'block';
+    const isUp = d.direction === 'UP';
+    const sign = d.pct_change_est >= 0 ? '+' : '';
+
+    document.getElementById('mCurr').textContent = fmtPrice(d.current_price);
+    document.getElementById('mTime').textContent = fmtTime(d.timestamp);
+
+    const pred = document.getElementById('mPred');
+    pred.textContent = fmtPrice(d.predicted_price);
+    pred.className = 'metric-value ' + (isUp ? 'up' : 'down');
+    document.getElementById('mChg').textContent = sign + d.pct_change_est.toFixed(4) + '%';
+
+    document.getElementById('mConf').textContent = (d.confidence*100).toFixed(1) + '%';
+    document.getElementById('mThresh').textContent = 'min ' + (d.threshold_used*100).toFixed(0) + '%';
+
+    const sig = document.getElementById('mSig');
+    sig.textContent = d.signal_strength;
+    sig.className = 'metric-value signal-' + d.signal_strength;
+    document.getElementById('mTrustSub').textContent = d.trustworthy ? 'Signal trusted' : 'Below threshold';
+
+    const icon = document.getElementById('dirIcon');
+    icon.className = 'dir-icon ' + (isUp ? 'up' : 'down');
+    icon.innerHTML = isUp ? '<i class="ti ti-trending-up"></i>' : '<i class="ti ti-trending-down"></i>';
+
+    const lbl = document.getElementById('dirLabel');
+    lbl.textContent = isUp ? 'Price going UP ▲' : 'Price going DOWN ▼';
+    lbl.className = 'dir-label ' + (isUp ? 'up' : 'down');
+    document.getElementById('dirSub').textContent =
+      'Next 5m candle → ' + fmtPrice(d.predicted_price) + ' (' + sign + d.pct_change_est.toFixed(3) + '%)';
+
+    const badge = document.getElementById('sigBadge');
+    badge.textContent = d.signal_strength;
+    badge.className = 'signal-badge signal-' + d.signal_strength;
+
+    const pct = Math.min(100, Math.round(d.confidence * 100));
+    document.getElementById('confPct').textContent = pct + '%';
+    const fill = document.getElementById('confFill');
+    fill.style.width = pct + '%';
+    fill.style.background = d.trustworthy ? '#16a34a' : '#F7931A';
+
+    const dot = document.getElementById('trustDot');
+    dot.style.background = d.trustworthy ? '#16a34a' : '#dc2626';
+    document.getElementById('trustLabel').textContent = d.trustworthy
+      ? 'Signal is trustworthy — confidence above threshold'
+      : 'Low confidence — do not act on this signal';
+  }
+
+  function addHistory(d) {
+    localHistory.unshift(d);
+    if (localHistory.length > 20) localHistory.pop();
+    renderHistory(localHistory);
+  }
+
+  async function loadHistory() {
+    const base = getBase();
+    if (!base) { setStatus('Enter your Render URL first', 'error'); return; }
+    setStatus('Loading history...', 'loading');
+    try {
+      const res = await fetch(base + '/history?limit=20');
+      if (!res.ok) throw new Error(res.statusText);
+      const data = await res.json();
+      localHistory = (data.predictions || []).reverse();
+      renderHistory(localHistory);
+      setStatus('Loaded ' + localHistory.length + ' predictions', 'success');
+    } catch(e) {
+      setStatus('Failed: ' + e.message, 'error');
+    }
+  }
+
+  function renderHistory(rows) {
+    const el = document.getElementById('histArea');
+    if (!rows.length) {
+      el.innerHTML = '<div class="empty"><i class="ti ti-clock-hour-3"></i>No predictions yet</div>';
+      return;
+    }
+    let html = `<table><thead><tr>
+      <th>Time</th><th>Current</th><th>Predicted</th><th>Change</th><th>Dir</th><th>Conf</th><th>Trust</th>
+    </tr></thead><tbody>`;
+    rows.slice(0,15).forEach(r => {
+      const isUp = r.direction === 'UP';
+      const sign = r.pct_change_est >= 0 ? '+' : '';
+      html += `<tr>
+        <td>${fmtTime(r.timestamp)}</td>
+        <td>${fmtPrice(r.current_price)}</td>
+        <td>${fmtPrice(r.predicted_price)}</td>
+        <td style="color:${isUp?'#4ade80':'#f87171'}">${sign}${(r.pct_change_est||0).toFixed(3)}%</td>
+        <td><span class="pill ${isUp?'up':'down'}">${r.direction}</span></td>
+        <td>${(r.confidence*100).toFixed(1)}%</td>
+        <td style="color:${r.trustworthy?'#4ade80':'#f87171'}">${r.trustworthy?'Yes':'No'}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }
+
+  function toggleLoop() {
+    const btn = document.getElementById('btnLoop');
+    if (loopTimer) {
+      clearInterval(loopTimer);
+      loopTimer = null;
+      btn.classList.remove('active');
+      btn.title = 'Auto-predict every 5 minutes';
+      setStatus('Auto-predict stopped');
+    } else {
+      runPredict();
+      loopTimer = setInterval(runPredict, 300000);
+      btn.classList.add('active');
+      btn.title = 'Click to stop auto-predict';
+      setStatus('Auto-predict active — runs every 5 minutes', 'success');
+    }
+  }
+</script>
+</body>
+</html>

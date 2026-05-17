@@ -39,7 +39,8 @@ from typing import Optional
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 # Add src/ to path so we can import predict.py
@@ -223,25 +224,25 @@ def check_models_health() -> dict:
 # ENDPOINT 1 — Root / Welcome
 # -----------------------------------------------------------------------------
 
-@app.get('/', tags=['General'])
+@app.get('/', response_class=HTMLResponse, tags=['General'])
 def root():
     """
-    Welcome message and available endpoints list.
-
-    This is the first page you see when you open the API in a browser.
+    Serves the interactive Bitcoin prediction dashboard.
+    Opens automatically when you visit your Render URL.
     """
-    return {
-        'message'   : 'Bitcoin ML Prediction API',
-        'version'   : '1.0.0',
-        'status'    : 'running',
-        'endpoints' : {
-            'docs'          : '/docs',
-            'health'        : '/health',
-            'predict'       : '/predict',
-            'history'       : '/history?limit=10',
-            'history_stats' : '/history/stats',
-        }
-    }
+    html_path = os.path.join(BASE_DIR, 'index.html')
+    if os.path.exists(html_path):
+        with open(html_path, 'r', encoding='utf-8') as f:
+            return HTMLResponse(content=f.read())
+    # Fallback JSON if HTML not found
+    return HTMLResponse(content="""
+    <html><body style="font-family:monospace;padding:2rem;background:#0d0d0d;color:#f1f1f1">
+    <h2>BTC Prediction API</h2>
+    <p>Endpoints: <a href="/docs" style="color:#F7931A">/docs</a> &nbsp;
+    <a href="/predict" style="color:#F7931A">/predict</a> &nbsp;
+    <a href="/health" style="color:#F7931A">/health</a></p>
+    </body></html>
+    """)
 
 
 # -----------------------------------------------------------------------------

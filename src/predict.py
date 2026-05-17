@@ -84,7 +84,7 @@ INTERVAL  = '5m'
 # EMA50 needs 50, MACD needs 35, rolling_30 needs 30 -> 200 is safe.
 FETCH_LIMIT = 200
 
-BASE_URL = 'https://api.binance.us/api/v3/klines'
+BASE_URL = 'https://api1.binance.com/api/v3/klines'
 
 MODEL_DIR  = os.path.join(BASE_DIR, '..', 'models')
 LOG_FILE   = os.path.join(BASE_DIR, '..', 'logs', 'predictions.json')
